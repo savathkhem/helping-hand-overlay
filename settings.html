@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Helping Hand Settings</title>
+  <link rel="stylesheet" href="settings.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>Helping Hand Settings</h1>
+      <p>Manage API keys, providers, and default models. Data stays local on this device.</p>
+    </header>
+
+    <section class="section">
+      <h2 class="section-title">Provider</h2>
+      <label class="field">
+        <span>Active Provider</span>
+        <select id="activeProvider">
+          <option value="gemini">Gemini</option>
+          <!-- Future: openai, local -->
+        </select>
+      </label>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Gemini</h2>
+      <label class="field">
+        <span>API Key</span>
+        <input id="geminiApiKey" type="password" placeholder="Your Gemini API key" />
+      </label>
+
+      <label class="field">
+        <span>Default Model</span>
+        <select id="geminiDefaultModel">
+          <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+          <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+          <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+          <option value="gemini-2.0-flash-001">gemini-2.0-flash-001</option>
+          <option value="gemini-2.0-flash-lite-001">gemini-2.0-flash-lite-001</option>
+          <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
+          <option value="gemini-2.0-flash-preview-image-generation">gemini-2.0-flash-preview-image-generation</option>
+          <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
+          <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
+          <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>API Version</span>
+        <select id="geminiApiVersion">
+          <option value="v1">v1</option>
+          <option value="v1beta">v1beta</option>
+        </select>
+      </label>
+    </section>
+
+    <footer class="actions">
+      <button id="saveBtn" class="primary">Save</button>
+      <span id="status" class="status"></span>
+    </footer>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>

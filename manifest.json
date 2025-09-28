@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Helping Hand Overlay",
+  "version": "0.1.0",
+  "description": "On-demand AI assistance over any application.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/*",
+    "<all_urls>"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["overlay.js", "overlay.css"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "options_page": "settings.html",
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

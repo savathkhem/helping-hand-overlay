@@ -39,8 +39,8 @@ We have a working Chrome extension that can:
 - [x] Refactor to capture-centric workflow (captures own chat thread; remove separate voice history).
 - [x] Storage refactor: thumbnails in `chrome.storage.local`, full media in IndexedDB; add retention policy and optional `unlimitedStorage`.
 - [x] Resilient capture pipeline: pending-capture storage, popup replay, and debug instrumentation.
-- [ ] Add Options model catalog cache (list models per provider; allow selection in Settings). **Next focus**
-- [ ] Accessibility (ARIA roles/labels; focus management) and extension `content_security_policy` for hardening.
+- [x] Add Options model catalog cache (list models per provider; allow selection in Settings).
+- [ ] Accessibility (ARIA roles/labels; focus management) and extension `content_security_policy` for hardening. **Next focus**
 
 ### Phase 3: Desktop Application
 - [ ] Choose a framework (for example, Electron or Tauri).
@@ -56,6 +56,7 @@ We have a working Chrome extension that can:
 
 ## Changelog
 * 2025-09-28: Refactored storage to unify history and capture management under `CaptureStorage`. -- Gemini
+* 2025-09-28: Added Gemini model catalog cache with TTL-backed refresh in Settings. --Codex
 * 2025-09-28: Hardened capture flow with pending storage replay and debug tooling. --Codex
 * 2025-09-28: Reduced UI code duplication by creating a shared `ui.js` and `shared.css`. -- Gemini
 * 2025-09-28: Improved modularity by extracting speech recognition and Gemini API calls into `speech.js` and `gemini.js`. -- Gemini
@@ -70,6 +71,8 @@ We have a working Chrome extension that can:
 ## Notes & Ideas
 *(A place for random thoughts and brainstorming.)*
 ### Debug Utilities
+- Added `__hhDebug` helper and verbose `[HH]` logs for capture/storage troubleshooting.
+- Gemini model catalog cached for 60 minutes (`hh-model-cache`) with on-demand refresh in Settings.
 - Added `__hhDebug` helper and verbose `[HH]` logs for capture/storage troubleshooting.
 
 ## Capture-Centric Storage Draft

@@ -25,4 +25,50 @@ input[type="password"], select {
 }
 
 .actions { display: flex; align-items: center; gap: 12px; }
-.status { color: #64748b; font-size: 13px; }
+.status { color: #64748b; font-size: 13px; }.field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-row select {
+  flex: 1;
+}
+
+.refresh-btn {
+  border: 1px solid #cbd2d9;
+  border-radius: 8px;
+  background: #e2e8f0;
+  color: #1f2937;
+  padding: 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: #d8dee8;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px -14px rgba(15, 23, 42, 0.4);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.hint {
+  font-size: 12px;
+  color: #64748b;
+  min-height: 16px;
+}
+
+.hint[data-state="error"] {
+  color: #dc2626;
+}
+
+.hint[data-state="success"] {
+  color: #15803d;
+}

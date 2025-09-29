@@ -1,15 +1,6 @@
-﻿:root {
-  color-scheme: light;
-  font-family: "Segoe UI", Arial, sans-serif;
-  font-size: 14px;
-}
-
 body {
-  margin: 0;
   padding: 16px;
   width: 340px;
-  background: #f5f7fb;
-  color: #1f2933;
 }
 
 .popup {
@@ -35,28 +26,11 @@ body {
   line-height: 1.4;
 }
 
-.section {
-  padding: 12px;
-  background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-
-.section-title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: #1f2933;
 }
 
 .status {
@@ -106,36 +80,9 @@ textarea {
   color: inherit;
 }
 
-button {
-  cursor: pointer;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 12px;
-  font-weight: 600;
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-button.primary {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  color: #ffffff;
-  width: auto;
-}
-
 button.secondary {
   background: #e0e7ff;
   color: #1d4ed8;
-}
-
-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 14px -10px rgba(37, 99, 235, 0.6);
 }
 
 .actions {
@@ -161,15 +108,6 @@ button:hover:not(:disabled) {
   color: #1f2933;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-.spinner {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid #cbd2d9;
-  border-top-color: #2563eb;
-  animation: spin 0.8s linear infinite;
 }
 
 .history {
@@ -203,12 +141,6 @@ button:hover:not(:disabled) {
   font-size: 12px;
   color: #4b5563;
   line-height: 1.4;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 #screenshotImg[data-visible="true"] {
@@ -284,4 +216,3 @@ button:hover:not(:disabled) {
 .history-item-error .history-status {
   color: #dc2626;
 }
-

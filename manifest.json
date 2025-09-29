@@ -15,8 +15,13 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["overlay.js", "overlay.css"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "overlay.js",
+        "overlay.css"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "background": {
@@ -28,5 +33,8 @@
   "options_page": "settings.html",
   "action": {
     "default_popup": "popup.html"
-  }
+  },
+  "optional_permissions": [
+    "unlimitedStorage"
+  ]
 }

@@ -3,38 +3,28 @@
   "name": "Helping Hand Overlay",
   "version": "0.1.0",
   "description": "On-demand AI assistance over any application.",
-  "permissions": [
-    "activeTab",
-    "scripting",
-    "tabs",
-    "storage"
-  ],
-  "host_permissions": [
-    "https://generativelanguage.googleapis.com/*",
-    "<all_urls>"
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "overlay.js",
-        "overlay.css"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
-    }
-  ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "side_panel": {
-    "default_path": "sidepanel.html"
-  },
+  "permissions": ["activeTab","scripting","tabs","storage","tabCapture","sidePanel"],
+  "host_permissions": ["https://generativelanguage.googleapis.com/*","<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "side_panel": { "default_path": "sidepanel.html" },
   "options_page": "settings.html",
-  "action": {
-    "default_popup": "popup.html"
+  "action": {},
+
+  "web_accessible_resources": [{
+    "resources": [
+      "modal.js","modal.css",
+      "overlay.js","overlay.css",
+      "app-shell.html","app.js","app.css",     
+      "shared.css",
+      "config.js","storage.js","ui.js","gemini.js","speech.js",
+      "surface-controller.js"                 
+    ],
+    "matches": ["<all_urls>"]
+  }],
+
+  "commands": {
+    "toggle_modal": { "suggested_key": { "default": "Alt+Shift+O" }, "description": "Toggle in-page modal" },
+    "open_tool_window": { "suggested_key": { "default": "Alt+Shift+W" }, "description": "Open floating tool window" }
   },
-  "optional_permissions": [
-    "unlimitedStorage"
-  ]
+  "optional_permissions": ["unlimitedStorage"]
 }

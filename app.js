@@ -1,13 +1,20 @@
-document.addEventListener("DOMContentLoaded", async () => {
-  const container =
-    document.getElementById("popupContainer") ||
-    document.getElementById("sidePanelContainer");
-  const isSidePanel = container?.id === "sidePanelContainer";
+import {
+  detectSurface,
+  renderUI,
+  getPreferredSurface,
+  routeFromPopupIfNeeded,
+  openSidePanel,
+} from "./surface-controller.js";
 
-  if (container && typeof window.createUI === "function" && !container.dataset.uiRendered) {
-    container.innerHTML = window.createUI();
-    container.dataset.uiRendered = "true";
-  }
+document.addEventListener("DOMContentLoaded", async () => {
+  const preferred = await getPreferredSurface();
+  const redirected = await routeFromPopupIfNeeded(preferred);
+  if (redirected) return;
+
+  const { container, surface } = detectSurface();
+  const isSidePanel = surface === "sidepanel";
+
+  renderUI(container);
 
   const captureBtn = document.getElementById("captureBtn");
   const screenshotImg = document.getElementById("screenshotImg");
@@ -23,6 +30,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const responseContainer = document.getElementById("responseContainer");
   const headerSettingsCog = document.getElementById("headerSettingsCog");
   const openPanelBtn = document.getElementById("openPanelBtn");
+  const videoPreview = document.getElementById("videoPreview");
+  const videoPlaceholder = document.getElementById("videoPlaceholder");
+  const videoStatus = document.getElementById("videoStatus");
 
   if (isSidePanel && openPanelBtn) {
     openPanelBtn.style.display = "none";
@@ -36,6 +46,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   let pendingCaptureId = null;
   let latestScreenshotDataUrl = "";
   let isSelecting = false;
+  let videoRecordingStream = null;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let videoRecordingTimeout = null;
+  let latestVideoBlob = null;
+  let latestVideoAttachment = null;
+  let latestVideoObjectUrl = "";
+  let videoRecordingStartTime = 0;
+  let isVideoRecording = false;
+  let isVideoProcessing = false;
+  const VIDEO_MAX_DURATION_MS = 10 * 1000;
+  const VIDEO_MIME_TYPE = "video/webm";
 
   const storage = new window.CaptureStorage();
   let storageInitError = null;
@@ -158,11 +180,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         const thumb = document.createElement("img");
         thumb.className = "history-thumb";
         thumb.src = capture.thumbnailDataUrl;
-        thumb.alt = "Screenshot thumbnail";
+        thumb.alt = "Capture thumbnail";
         thumb.addEventListener("click", (event) => {
           event.stopPropagation();
           pendingCaptureId = null;
           setScreenshotState(capture.thumbnailDataUrl);
+          if (capture.attachments?.video?.blobKey) {
+            (async () => {
+              try {
+                await storageReady;
+                const blob = await storage.getBlob(capture.id, "video");
+                if (blob) {
+                  setVideoPreviewFromBlob(blob, capture.attachments.video);
+                } else {
+                  resetVideoPreview();
+                }
+              } catch (err) {
+                console.warn("Failed to load video attachment from thumbnail click", err);
+                resetVideoPreview();
+              }
+            })();
+          } else {
+            resetVideoPreview();
+          }
         });
         li.appendChild(thumb);
       }
@@ -195,18 +235,44 @@ document.addEventListener("DOMContentLoaded", async () => {
       statusDiv.textContent = statusCopy;
       textWrapper.appendChild(statusDiv);
 
+      if (capture.attachments?.video) {
+        const videoBadge = document.createElement("span");
+        videoBadge.className = "history-badge";
+        videoBadge.textContent = "Video";
+        textWrapper.appendChild(videoBadge);
+      }
+
       li.appendChild(textWrapper);
 
-      li.addEventListener("click", () => {
+      li.addEventListener("click", async () => {
         pendingCaptureId = capture.id;
         if (capture.thumbnailDataUrl) setScreenshotState(capture.thumbnailDataUrl);
         if (promptText && capture.prompt) promptText.value = capture.prompt;
         if (responseContainer && capture.response) responseContainer.textContent = capture.response;
+
+        if (capture.attachments?.video?.blobKey) {
+          try {
+            await storageReady;
+            const blob = await storage.getBlob(capture.id, "video");
+            if (blob) {
+              setVideoPreviewFromBlob(blob, capture.attachments.video);
+            } else {
+              resetVideoPreview();
+            }
+          } catch (err) {
+            console.warn("Failed to load video attachment", err);
+            resetVideoPreview();
+          }
+        } else {
+          resetVideoPreview();
+        }
       });
 
       historyList.appendChild(li);
     });
   };
+
+
 
   const recordDraftHistory = async (prompt) => {
     const trimmed = (prompt || "").trim();
@@ -220,12 +286,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       (c) => c.status === "draft" && c.prompt === trimmed
     );
 
+    const attachments = {};
+    const thumbnailSource = (latestVideoAttachment?.thumbnailDataUrl) || latestScreenshotDataUrl || existingDraft?.thumbnailDataUrl || "";
+    if (latestVideoAttachment) {
+      attachments.video = latestVideoAttachment;
+    }
+
     const capture = await storage.upsertCapture({
       id: existingDraft?.id,
       prompt: trimmed,
       response: existingDraft?.response || "",
-      thumbnailDataUrl: latestScreenshotDataUrl || existingDraft?.thumbnailDataUrl || "",
+      thumbnailDataUrl: thumbnailSource,
       status: "draft",
+      attachments,
     });
     pendingCaptureId = capture.id;
     await loadHistory();
@@ -242,13 +315,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    let thumb = "";
+    let thumb = latestVideoAttachment?.thumbnailDataUrl || "";
     try {
-      if (latestScreenshotDataUrl) {
+      if (!thumb && latestScreenshotDataUrl) {
         thumb = await createThumbnail(latestScreenshotDataUrl);
       }
     } catch (e) {
       console.warn("Thumbnail generation failed", e);
+    }
+
+    const attachments = {};
+    if (latestVideoAttachment) {
+      attachments.video = latestVideoAttachment;
     }
 
     const capture = await storage.upsertCapture({
@@ -256,6 +334,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       prompt: trimmed,
       thumbnailDataUrl: thumb,
       status: "pending",
+      attachments,
     });
     pendingCaptureId = capture.id;
     await loadHistory();
@@ -324,6 +403,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         screenshotImg.setAttribute("data-visible", "true");
       }
       if (screenshotPlaceholder) screenshotPlaceholder.hidden = true;
+      // If a video is showing, hide it when a new screenshot is set.
+      if (videoPreview) {
+        try { videoPreview.pause(); } catch (_) {}
+        videoPreview.hidden = true;
+      }
+      if (videoPlaceholder) videoPlaceholder.hidden = false;
     } else {
       latestScreenshotDataUrl = "";
       if (screenshotImg) {
@@ -334,6 +419,277 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
+  const setVideoStatus = (message, state = "info") => {
+    if (!videoStatus) return;
+    videoStatus.textContent = message || "";
+    videoStatus.dataset.state = message ? state : "";
+  };
+
+  const revokeVideoObjectUrl = () => {
+    if (latestVideoObjectUrl) {
+      URL.revokeObjectURL(latestVideoObjectUrl);
+      latestVideoObjectUrl = "";
+    }
+  };
+
+  const disposeVideoStream = () => {
+    if (videoRecordingTimeout) {
+      clearTimeout(videoRecordingTimeout);
+      videoRecordingTimeout = null;
+    }
+    if (mediaRecorder) {
+      try {
+        if (mediaRecorder.state !== "inactive") {
+          mediaRecorder.stop();
+        }
+      } catch (err) {
+        console.warn("MediaRecorder stop failed", err);
+      }
+      mediaRecorder.ondataavailable = null;
+      mediaRecorder.onstop = null;
+      mediaRecorder = null;
+    }
+    if (videoRecordingStream) {
+      try {
+        videoRecordingStream.getTracks().forEach((track) => track.stop());
+      } catch (err) {
+        console.warn("Stream stop failed", err);
+      }
+      videoRecordingStream = null;
+    }
+    videoRecordingStartTime = 0;
+    isVideoRecording = false;
+  };
+
+  const resetVideoPreview = () => {
+    disposeVideoStream();
+    revokeVideoObjectUrl();
+    latestVideoBlob = null;
+    latestVideoAttachment = null;
+    if (videoPreview) {
+      videoPreview.pause();
+      videoPreview.removeAttribute("src");
+      videoPreview.load();
+      videoPreview.hidden = true;
+    }
+    if (videoPlaceholder) videoPlaceholder.hidden = false;
+    setVideoStatus("");
+  };
+
+  const setVideoPreviewFromBlob = (blob, meta = {}) => {
+    if (!videoPreview) return;
+    revokeVideoObjectUrl();
+    latestVideoBlob = blob;
+    latestVideoAttachment = meta ? { ...meta } : null;
+    const url = URL.createObjectURL(blob);
+    latestVideoObjectUrl = url;
+    videoPreview.src = url;
+    videoPreview.hidden = false;
+    videoPreview.controls = true;
+    videoPreview.load();
+    if (videoPlaceholder) videoPlaceholder.hidden = true;
+    // Hide the screenshot image while showing video in the shared preview.
+    if (screenshotImg) {
+      screenshotImg.setAttribute("data-visible", "false");
+    }
+    if (screenshotPlaceholder) screenshotPlaceholder.hidden = true;
+  };
+
+  const createVideoThumbnail = (blob) =>
+    new Promise((resolve, reject) => {
+      const tempVideo = document.createElement("video");
+      tempVideo.muted = true;
+      tempVideo.src = URL.createObjectURL(blob);
+      tempVideo.currentTime = 0;
+      const cleanup = () => {
+        tempVideo.pause();
+        URL.revokeObjectURL(tempVideo.src);
+      };
+      tempVideo.addEventListener("loadeddata", () => {
+        try {
+          const canvas = document.createElement("canvas");
+          const width = tempVideo.videoWidth || 640;
+          const height = tempVideo.videoHeight || 360;
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(tempVideo, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+          cleanup();
+          resolve(dataUrl);
+        } catch (err) {
+          cleanup();
+          reject(err);
+        }
+      });
+      tempVideo.addEventListener("error", (event) => {
+        cleanup();
+        reject(event?.error || new Error("Failed to render video thumbnail"));
+      });
+    });
+
+  const captureTabStream = () =>
+    new Promise((resolve, reject) => {
+      try {
+        chrome.tabCapture.capture(
+          {
+            audio: false,
+            video: true,
+            videoConstraints: {
+              mandatory: {
+                maxWidth: 1280,
+                maxHeight: 720,
+                maxFrameRate: 30,
+              },
+            },
+          },
+          (stream) => {
+            if (chrome.runtime.lastError || !stream) {
+              reject(new Error(chrome.runtime.lastError?.message || "Tab capture failed"));
+              return;
+            }
+            resolve(stream);
+          }
+        );
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+  const blobToBase64 = (blob) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = (reader.result || "").toString().split(",")[1] || "";
+        resolve(base64);
+      };
+      reader.onerror = () => reject(reader.error || new Error("Failed to encode blob"));
+      reader.readAsDataURL(blob);
+    });
+
+  const processRecordedVideo = async () => {
+    isVideoProcessing = true;
+    const durationMs = Math.max(1, Date.now() - videoRecordingStartTime);
+    const blob = new Blob(recordedChunks, { type: VIDEO_MIME_TYPE });
+    recordedChunks = [];
+    if (!blob.size) {
+      setVideoStatus("No video captured.", "error");
+      disposeVideoStream();
+      isVideoProcessing = false;
+      return;
+    }
+    setVideoStatus("Processing video...", "info");
+    disposeVideoStream();
+    try {
+      const thumbnail = await createVideoThumbnail(blob).catch(() => "");
+      const attachmentMeta = {
+        mimeType: blob.type || VIDEO_MIME_TYPE,
+        size: blob.size,
+        durationMs,
+        thumbnailDataUrl: thumbnail,
+      };
+      setVideoPreviewFromBlob(blob, attachmentMeta);
+      await storageReady;
+      if (storageInitError) {
+        setVideoStatus("Storage unavailable; video not saved.", "error");
+        return;
+      }
+      const capture = await storage.upsertCapture({
+        id: pendingCaptureId || undefined,
+        prompt: (promptText && promptText.value) || "",
+        status: "draft",
+        thumbnailDataUrl: thumbnail || "",
+        attachments: {
+          video: attachmentMeta,
+        },
+      });
+      pendingCaptureId = capture.id;
+      await loadHistory();
+      const blobKey = await storage.saveBlob(capture.id, "video", blob);
+      latestVideoAttachment = { ...attachmentMeta, blobKey };
+      latestVideoBlob = blob;
+      await storage.updateCapture(capture.id, {
+        attachments: {
+          ...capture.attachments,
+          video: latestVideoAttachment,
+        },
+        thumbnailDataUrl: attachmentMeta.thumbnailDataUrl || capture.thumbnailDataUrl || "",
+      });
+      setVideoStatus("Video ready.", "success");
+    } catch (err) {
+      console.error("Failed to process recorded video", err);
+      resetVideoPreview();
+      setVideoStatus(err?.message || "Failed to process video", "error");
+    } finally {
+      isVideoProcessing = false;
+    }
+  };
+
+  const stopVideoRecording = ({ timeout = false } = {}) => {
+    if (!isVideoRecording) return;
+    if (videoRecordingTimeout) {
+      clearTimeout(videoRecordingTimeout);
+      videoRecordingTimeout = null;
+    }
+    isVideoRecording = false;
+    setVideoStatus(timeout ? "Recording stopped (time limit)." : "Stopping...", "info");
+    try {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+      } else {
+        disposeVideoStream();
+        processRecordedVideo();
+      }
+    } catch (err) {
+      console.error("Failed to stop recording", err);
+      disposeVideoStream();
+      resetVideoPreview();
+      setVideoStatus(err?.message || "Failed to stop recording", "error");
+      isVideoProcessing = false;
+    }
+  };
+
+  const startVideoRecording = async () => {
+    if (isVideoProcessing) {
+      setVideoStatus("Video is still processing. Please wait.", "info");
+      return;
+    }
+    if (isVideoRecording) {
+      stopVideoRecording({ userInitiated: true });
+      return;
+    }
+    setVideoStatus("");
+    recordedChunks = [];
+    try {
+      const stream = await captureTabStream();
+      videoRecordingStream = stream;
+      const options = {};
+      if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
+        options.mimeType = "video/webm;codecs=vp9";
+      } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8")) {
+        options.mimeType = "video/webm;codecs=vp8";
+      }
+      mediaRecorder = new MediaRecorder(stream, options);
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size) {
+          recordedChunks.push(event.data);
+        }
+      };
+      mediaRecorder.onstop = () => {
+        processRecordedVideo();
+      };
+      mediaRecorder.start(500);
+      isVideoRecording = true;
+      videoRecordingStartTime = Date.now();
+      setVideoStatus("Recording in progress...", "info");
+      videoRecordingTimeout = setTimeout(() => stopVideoRecording({ timeout: true }), VIDEO_MAX_DURATION_MS);
+    } catch (err) {
+      console.error("Failed to start video recording", err);
+      setVideoStatus(err?.message || "Failed to start recording", "error");
+      disposeVideoStream();
+      isVideoRecording = false;
+    }
+  };
   const resetCaptureButton = () => {
     if (!captureBtn) return;
     captureBtn.disabled = false;
@@ -465,7 +821,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         clearPendingCapture();
         resetCaptureButton();
         break;
+      case "hh-video-start":
+        startVideoRecording();
+        break;
+      case "hh-video-stop":
+        stopVideoRecording({ userInitiated: true });
+        break;
       default:
+        break;
         break;
     }
   });
@@ -475,6 +838,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log('[HH] bootstrap', { storageInitError });
     await loadHistory();
     await loadSettings();
+    // Respect UI surface preference when opened as toolbar popup
     await consumePendingCapture();
     setScreenshotState("");
   };
@@ -484,6 +848,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // --- Screenshot Functionality ---
+
   if (captureBtn) {
     captureBtn.addEventListener('click', () => {
       console.log('[HH] captureBtn click', { isSelecting });
@@ -646,12 +1011,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (!isSidePanel && openPanelBtn) {
     openPanelBtn.addEventListener("click", async () => {
+      await openSidePanel();
       try {
-        const win = await chrome.windows.getCurrent();
-        await chrome.sidePanel.open({ windowId: win.id });
         window.close();
       } catch (e) {
-        console.error("Failed to open side panel", e);
+        console.error("Failed to close popup after opening side panel", e);
       }
     });
   }
@@ -679,5 +1043,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       img.src = dataUrl;
     });
   }
+
 });
+
+
+
+
 

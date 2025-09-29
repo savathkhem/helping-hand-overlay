@@ -170,7 +170,7 @@
 
   const mediaGroup = createGroup();
   const imageBtn = createButton("Image", { role: "media", value: "image", toggled: true });
-  const videoBtn = createButton("Video", { role: "media", value: "video", disabled: true });
+  const videoBtn = createButton("Video", { role: "media", value: "video" });
   mediaGroup.append(imageBtn, videoBtn);
 
   const modeGroup = createGroup();
@@ -351,11 +351,14 @@
     const value = button.dataset.value;
 
     if (role === "media") {
+      if (value === "video") {
+        sendAndClose("hh-video-start");
+        return;
+      }
       setButtonToggled(imageBtn, value === "image");
       setButtonToggled(videoBtn, value === "video");
       return;
     }
-
     if (role === "shape") {
       setButtonToggled(rectangleBtn, true);
       return;
@@ -404,3 +407,5 @@
 
   clearSelection();
 })();
+
+

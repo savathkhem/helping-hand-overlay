@@ -1,0 +1,83 @@
+.hh-modal-root {
+  all: initial;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+}
+
+.hh-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(2px);
+  pointer-events: auto;
+}
+
+.hh-modal {
+  position: absolute;
+  top: 80px;
+  left: 80px;
+  width: 420px;
+  height: 560px;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.08);
+  overflow: hidden;
+  pointer-events: auto;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+.hh-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: linear-gradient(0deg, #111827, #1f2937);
+  cursor: move;
+  user-select: none;
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
+.hh-modal-title { flex: 1; }
+
+.hh-modal-btn {
+  margin-left: auto;
+  border: none;
+  background: #374151;
+  color: #fff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.hh-modal-body {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.hh-modal-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #0f172a;
+}
+
+.hh-modal-handle {
+  width: 12px;
+  height: 12px;
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  border-right: 2px solid #444;
+  border-bottom: 2px solid #444;
+  cursor: nwse-resize;
+}
+

@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   const SETTINGS_KEY = "hh-settings";
   const MODEL_CACHE_KEY = "hh-model-cache";
   const MODEL_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -24,9 +24,16 @@
   const modelCatalogStatus = $("modelCatalogStatus");
   const saveBtn = $("saveBtn");
   const status = $("status");
+  const uiSurfaceRadios = [
+    () => document.getElementById("uiSurfacePopup"),
+    () => document.getElementById("uiSurfaceSidePanel"),
+    () => document.getElementById("uiSurfaceModal"),
+    () => document.getElementById("uiSurfaceWindow"),
+  ];
 
   const defaultSettings = {
     activeProvider: "gemini",
+    uiSurface: "popup",
     providers: {
       gemini: {
         apiKey: "",
@@ -178,7 +185,7 @@
         return;
       }
 
-      setModelCatalogStatus("Fetching model catalog�");
+      setModelCatalogStatus("Fetching model catalog…");
       if (refreshGeminiModelsBtn) refreshGeminiModelsBtn.disabled = true;
       if (geminiDefaultModel) geminiDefaultModel.disabled = true;
 
@@ -213,6 +220,17 @@
     const settings = stored?.[SETTINGS_KEY] || defaultSettings;
     try {
       activeProvider.value = settings.activeProvider || "gemini";
+      // UI surface radios
+      const surface = settings.uiSurface || "popup";
+      const byValue = {
+        popup: "uiSurfacePopup",
+        sidepanel: "uiSurfaceSidePanel",
+        modal: "uiSurfaceModal",
+        window: "uiSurfaceWindow",
+      };
+      const radioId = byValue[surface] || byValue.popup;
+      const radio = document.getElementById(radioId);
+      if (radio) radio.checked = true;
       const gemini = settings.providers?.gemini || {};
       geminiApiKey.value = gemini.apiKey || "";
       geminiApiVersion.value = gemini.apiVersion || "v1";
@@ -230,8 +248,14 @@
   };
 
   const saveSettings = async () => {
+    const selectedSurface = (() => {
+      const nodes = document.querySelectorAll('input[name="uiSurface"]');
+      for (const n of nodes) if (n.checked) return n.value;
+      return "popup";
+    })();
     const payload = {
       activeProvider: activeProvider.value,
+      uiSurface: selectedSurface,
       providers: {
         gemini: {
           apiKey: geminiApiKey.value.trim(),
@@ -284,3 +308,4 @@
 
   document.addEventListener("DOMContentLoaded", init);
 })();
+

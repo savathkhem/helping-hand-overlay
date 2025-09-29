@@ -19,6 +19,8 @@ function createUI() {
       <div class="preview" id="screenshotPreview">
         <img id="screenshotImg" alt="Screenshot preview" />
         <p class="placeholder" id="screenshotPlaceholder">No screenshot captured yet.</p>
+        <video id="videoPreview" controls hidden></video>
+        <p class="placeholder" id="videoPlaceholder">No video recorded yet.</p>
       </div>
     </section>
 

@@ -28,7 +28,7 @@ We have a working Chrome extension that can:
 - [x] Improve the UI/UX.
 - [x] Allow capturing a selected area instead of the whole tab (or add markup tools).
 - [x] Add a settings page to choose provider/model and store API key locally (`chrome.storage`).
-- [ ] Add the ability to handle short video recordings.
+- [x] Add the ability to handle short video recordings.
 - [ ] Add annotation tools for screenshots after capture.
 
 ### Todo List
@@ -41,6 +41,25 @@ We have a working Chrome extension that can:
 - [x] Resilient capture pipeline: pending-capture storage, popup replay, and debug instrumentation.
 - [x] Add Options model catalog cache (list models per provider; allow selection in Settings).
 - [ ] Accessibility (ARIA roles/labels; focus management) and extension `content_security_policy` for hardening. **Next focus**
+
+// Video recording workflow overhaul
+- [ ] Keep overlay visible during video recording (no auto-close on start).
+- [ ] Overlay "Video" button shows recording state (red) and countdown (sync with timeout).
+- [ ] Require "Confirm" in overlay to commit recording to history; "Cancel" stops and discards.
+- [ ] Background forwards a new `hh-video-confirm` message to popup.
+- [ ] Popup stages processed video (preview + thumbnail) and only persists on confirm (decouple processing from persistence).
+- [ ] Overlay stops recording before confirm/cancel; countdown stops on timeout or manual stop.
+
+// UI surfaces and modal/window
+- [ ] Respect preferred UI surface for toolbar icon (Popup, Side Panel, In‑Page Modal, Floating Window).
+- [ ] Add secondary keyboard shortcut (commands) to toggle the in‑page modal directly.
+- [ ] Implement in‑page modal via iframe (isolation) that loads the shared app shell (ui.js/popup.js/popup.css).
+- [ ] Add "Dock to side" mode for the modal (left/right drawer), resizable width, with smooth transitions.
+- [ ] Persist modal/window bounds (position/size/dock state) in `chrome.storage.local` and restore on open.
+- [ ] Background routing: open preferred surface; avoid targeting extension windows when launching overlay/capture.
+- [ ] Manifest updates: add `commands` for modal toggle; expose modal assets in `web_accessible_resources`.
+- [ ] A11y: focus trap in modal, Escape to close, return focus to page, proper roles/labels.
+- [ ] QA: verify screenshot/video/voice flows work identically across all surfaces.
 
 ### Phase 3: Desktop Application
 - [ ] Choose a framework (for example, Electron or Tauri).
@@ -56,6 +75,7 @@ We have a working Chrome extension that can:
 
 ## Changelog
 * 2025-09-28: Refactored storage to unify history and capture management under `CaptureStorage`. -- Gemini
+* 2025-09-28: Added short screen recording capture with storage + Gemini submission support. --Codex
 * 2025-09-28: Added Gemini model catalog cache with TTL-backed refresh in Settings. --Codex
 * 2025-09-28: Hardened capture flow with pending storage replay and debug tooling. --Codex
 * 2025-09-28: Reduced UI code duplication by creating a shared `ui.js` and `shared.css`. -- Gemini

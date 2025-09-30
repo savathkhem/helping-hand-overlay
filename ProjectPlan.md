@@ -1,10 +1,47 @@
 # Project: Helping Hand Overlay
 
-**Mission:** To create a user-friendly tool that provides on-demand AI assistance over any application, allowing users to ask questions using screenshots, screen recordings, and voice prompts.
+> Status note (2025‑09‑29): The plan below has been reworked. The legacy MVP roadmap remains for historical context, but the active plan is the Svelte-based Unified UI Overhaul described next.
 
 ---
 
-## Current Status: MVP Complete
+## Unified UI Overhaul (Active Plan)
+
+Goals
+- Unify all surfaces (popup, side panel, in‑page modal, overlay) under a single Svelte UI.
+- Reuse existing capture, storage, speech, and model logic via thin adapters.
+- Ship incrementally behind a settings flag; keep legacy UI as fallback until parity.
+
+Deliverables
+- Svelte app in `src/` with components matching the mock (`mockup_app-shell.html`).
+- Build output in `dist/` (JS/CSS) loaded by all surfaces when enabled.
+- Service adapters: storage, model provider, speech, capture, surface routing.
+- Accessibility upgrades (aria labels, focus management, keyboard navigation).
+
+Milestones
+1) Scaffold Svelte + Vite project; render static mock as components.
+2) Add stores (ui/chat/history/capture/settings) and replace placeholders with SVG icons + a11y.
+3) Integrate chat send/receive via model service abstraction.
+4) Integrate history list/paging with `CaptureStorage`.
+5) Integrate capture flow (image/video) and pending‑capture replay.
+6) Replace overlay UI to open the unified modal shell; persist size/position.
+7) QA across surfaces; performance polish; error states.
+8) Flip default to Svelte UI; retire legacy UI.
+
+Risks & Mitigations
+- Manifest and iframe access: expose `dist/*` via `web_accessible_resources`; validate CSP.
+- Cross‑surface state: centralize via adapters and persisted settings; avoid direct DOM coupling.
+- Rollout safety: settings flag toggles `legacy` vs `svelte`; easy rollback.
+
+Tracking
+- Use this document to track milestone status and decisions. Link code PRs under each milestone as they land.
+
+---
+
+## Legacy MVP Plan (Archived for Reference)
+
+The following sections describe the original MVP roadmap and notes. They remain for context but are no longer the active plan.
+
+### Current Status: MVP Complete
 
 We have a working Chrome extension that can:
 - Capture a screenshot of the current tab, including selective region via in-page overlay.
@@ -15,7 +52,7 @@ We have a working Chrome extension that can:
 
 ---
 
-## Roadmap & Goals
+## Roadmap & Goals (Legacy)
 
 ### Phase 1: MVP - Chrome Extension
 - [x] Basic UI (`popup.html`).

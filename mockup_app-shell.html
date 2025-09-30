@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Helping Hand – Chat v2</title>
+<style>
+  :root{ --bg:#fff; --muted:#f9fafb; --muted-2:#e5e7eb; --muted-3:#e2e8f0; --ink:#111827; --brand-1:#2563eb; --brand-2:#1d4ed8; --shadow:rgba(15,23,42,.6); }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:linear-gradient(180deg,#f3f4f6,#e5e7eb)}
+  .hidden{display:none!important}
+
+  /* ===== Modal Shell ===== */
+  .hh-modal{position:absolute;top:80px;left:200px;width:760px;max-width:92vw;background:var(--bg);border-radius:16px;box-shadow:0 16px 40px -24px var(--shadow);overflow:hidden}
+  .hh-modal-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 12px;background:var(--muted);border-bottom:1px solid var(--muted-2)}
+  .hh-toolbar-left{flex:1;display:flex;align-items:center;gap:12px}
+  .hh-toolbar-right{display:flex;align-items:center;gap:12px;margin-left:auto}
+  .hh-overlay-group{display:flex;gap:6px;flex-wrap:wrap}
+  .hh-overlay-btn{padding:6px 12px;border:none;border-radius:22px;background:var(--muted-3);cursor:pointer;font-size:12px;font-weight:600}
+  .hh-overlay-btn.active,.hh-overlay-btn.primary{background:linear-gradient(135deg,var(--brand-1),var(--brand-2));color:#fff}
+  .hh-capture-btn{padding:8px 14px;font-weight:700;border-radius:999px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--brand-1),var(--brand-2));color:#fff;box-shadow:0 6px 16px rgba(37,99,235,.25)}
+  .hh-expander{width:28px;height:28px;border-radius:999px;border:1px solid var(--muted-2);background:#fff;cursor:pointer;font-weight:700;display:grid;place-items:center}
+  .hh-menu-btn{background:none;border:none;font-size:18px;cursor:pointer;padding:4px 6px}
+  .hh-menu-dropdown{position:absolute;top:100%;right:0;background:#fff;border:1px solid #ddd;border-radius:10px;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:160px;overflow:hidden;z-index:9999}
+  .hh-menu-dropdown.hidden{display:none}
+
+  /* ===== Body with slide ===== */
+  .hh-modal-body{max-height:680px;overflow:hidden;transition:max-height .25s ease}
+  .hh-modal-body.collapsed{max-height:0}
+  .hh-body-inner{background:#fff;display:flex;flex-direction:column}
+
+  .hh-section{padding:14px 16px}
+  .hh-header{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px}
+  .hh-header h3{margin:0;font-size:14px;color:var(--ink)}
+  .hh-chevron{width:28px;height:28px;border-radius:999px;border:1px solid var(--muted-2);background:#fff;display:grid;place-items:center;cursor:pointer;transition:transform .2s ease}
+  .rot-180{transform:rotate(180deg)}
+
+  /* ===== CHAT WINDOW — bubbles, bottom anchored, scrollable ===== */
+  .hh-chat{background:#fff;border:1px solid var(--muted-2);border-radius:12px;height:340px;overflow-y:auto;overflow-x:hidden;padding:12px;display:flex;flex-direction:column-reverse;gap:10px}
+  .hh-msg{display:flex}
+  .hh-msg .stack{max-width:78%;display:flex;flex-direction:column;gap:4px}
+  .hh-msg .bubble{padding:8px 12px;border-radius:18px;line-height:1.35;font-size:13px;word-wrap:break-word;word-break:break-word}
+  .hh-msg.me{justify-content:flex-end}
+  .hh-msg.me .bubble{background:linear-gradient(135deg,var(--brand-1),var(--brand-2));color:#fff;border-bottom-right-radius:6px}
+  .hh-msg.me .meta{align-self:flex-end;text-align:right}
+  .hh-msg.bot{justify-content:flex-start}
+  .hh-msg.bot .bubble{background:#f3f4f6;color:#111827;border-bottom-left-radius:6px;border:1px solid #e5e7eb}
+  .hh-msg.bot .meta{align-self:flex-start;text-align:left}
+  .hh-time{font-size:11px;color:#6b7280}
+
+  /* typing indicator */
+  .typing{display:flex;gap:6px;align-items:center}
+  .typing .dot{width:6px;height:6px;border-radius:999px;background:#9ca3af;animation:blink 1s infinite ease-in-out}
+  .typing .dot:nth-child(2){animation-delay:.15s}
+  .typing .dot:nth-child(3){animation-delay:.3s}
+  @keyframes blink{0%,80%,100%{opacity:.2} 40%{opacity:1}}
+
+  /* ===== Prompt pill ===== */
+  .hh-prompt-pill{display:flex;align-items:center;gap:10px;background:#f3f4f6;border:1px solid var(--muted-2);border-radius:999px;padding:10px 14px}
+  .icon-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--muted-2);background:#fff;display:grid;place-items:center;cursor:pointer}
+  .hh-pill-input{flex:1;border:none;outline:none;background:transparent;font-size:14px;color:var(--ink)}
+  .hh-muted{color:#6b7280;font-size:12px}
+
+  /* ===== Chat History Pills ===== */
+  .hh-history-wrap{transition:max-height .25s ease;overflow:hidden;max-height:220px}
+  .hh-history-wrap.collapsed{max-height:0}
+  .hh-history-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .hh-history-pill{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:10px 12px;border-radius:999px;background:#f3f4f6;border:1px solid #e5e7eb;cursor:pointer}
+  .hh-history-pill:hover{background:#e8ecf3}
+  .hh-history-pill .title{font-size:13px;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hh-history-pill .close{width:22px;height:22px;border-radius:999px;border:1px solid #e5e7eb;background:#fff;display:grid;place-items:center;font-weight:700}
+  .hh-history-pill .close:hover{background:#f9fafb}
+  .hh-history-pager{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:8px}
+  .pager-btn{padding:6px 10px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;font-size:12px}
+  .pager-btn[disabled]{opacity:.5;cursor:not-allowed}
+  .pager-info{font-size:12px;color:#6b7280}
+
+  /* ===== Resizers ===== */
+  .hh-resize-x{position:absolute;top:0;right:-6px;height:100%;width:12px;cursor:ew-resize}
+  .hh-resize-y{position:absolute;left:0;right:0;bottom:-6px;height:12px;cursor:ns-resize}
+  .hh-resize-xy{position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;cursor:nwse-resize}
+</style>
+</head>
+<body>
+<div class="hh-modal" id="hhModal">
+  <div class="hh-modal-toolbar" id="hhToolbar">
+    <div class="hh-toolbar-left">
+      <button class="hh-capture-btn" id="hhCaptureBtn">Capture</button>
+      <div id="hhControls" class="hidden" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="hh-overlay-group" role="group" aria-label="Capture type">
+          <button class="hh-overlay-btn active" data-toggle="captureType" data-value="image">Image</button>
+          <button class="hh-overlay-btn" data-toggle="captureType" data-value="video">Video</button>
+        </div>
+        <div class="hh-overlay-group" role="group" aria-label="Region">
+          <button class="hh-overlay-btn active" data-toggle="region" data-value="rect">Rectangle</button>
+          <button class="hh-overlay-btn" data-toggle="region" data-value="full">Full tab</button>
+        </div>
+        <div class="hh-overlay-group">
+          <button class="hh-overlay-btn" id="hhCancelBtn">Cancel</button>
+          <button class="hh-overlay-btn primary" id="hhConfirmBtn" disabled>Confirm</button>
+        </div>
+      </div>
+    </div>
+    <div class="hh-toolbar-right">
+      <button class="hh-expander" id="hhExpander" title="Expand/Collapse">▴</button>
+      <div class="hh-toolbar-menu">
+        <button class="hh-menu-btn" id="hhMenuBtn" aria-haspopup="menu" aria-expanded="false">☰</button>
+        <div class="hh-menu-dropdown hidden" id="hhMenu">
+          <button id="hhSettings">Settings</button>
+          <button id="hhMinimize">Minimize</button>
+          <button id="hhClose">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hh-modal-body" id="hhBody">
+    <div class="hh-body-inner">
+      <!-- Chat Window (no header, not collapsible) -->
+      <div class="hh-section" id="hhChatSection" style="padding-bottom:6px;border-bottom:1px solid #f1f5f9">
+        <div class="hh-chat" id="hhChat"></div>
+      </div>
+
+      <!-- Prompts -->
+      <div class="hh-section" id="hhPromptsSection">
+        <div class="hh-header"><h3>Prompts</h3></div>
+        <div class="hh-prompt-pill">
+          <button class="icon-btn" id="hhPromptAddBtn" title="Add">+</button>
+          <input id="hhPromptInput" class="hh-pill-input" placeholder="Ask anything" />
+          <button class="icon-btn" title="Voice" id="hhMicBtn">🎙️</button>
+          <button class="icon-btn" title="Magic" id="hhMagicBtn" style="background:var(--brand-1);border-color:var(--brand-1);color:#fff">✨</button>
+        </div>
+        <div class="hh-muted" style="margin-top:8px">Tip: press <strong>Enter</strong> to add a prompt to the chat.</div>
+      </div>
+
+      <!-- Chat History (collapsible) -->
+      <div class="hh-section" id="hhHistorySection">
+        <div class="hh-header">
+          <h3>Chat History</h3>
+          <button class="hh-chevron" id="hhHistoryToggle" title="Collapse/Expand">▾</button>
+        </div>
+        <div class="hh-history-wrap" id="hhHistoryWrap">
+          <div class="hh-history-grid" id="hhHistoryGrid"></div>
+          <div class="hh-history-pager">
+            <button class="pager-btn" id="hhPrevPage">Prev</button>
+            <span class="pager-info" id="hhPagerInfo">Page 1 of 1</span>
+            <button class="pager-btn" id="hhNextPage">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hh-resize-x" id="hhResizeX" title="Drag to resize width"></div>
+  <div class="hh-resize-y" id="hhResizeY" title="Drag to resize height"></div>
+  <div class="hh-resize-xy" id="hhResizeXY" title="Drag to resize width & height"></div>
+</div>
+
+<script>
+(function(){
+  const $ = (s,r=document)=>r.querySelector(s); const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+  const modal=$('#hhModal'), toolbar=$('#hhToolbar'), body=$('#hhBody');
+  const controls=$('#hhControls'), captureBtn=$('#hhCaptureBtn'), cancelBtn=$('#hhCancelBtn'), confirmBtn=$('#hhConfirmBtn');
+  const expander=$('#hhExpander'), menuBtn=$('#hhMenuBtn'), menu=$('#hhMenu');
+  const chat=$('#hhChat');
+  const chatSection=$('#hhChatSection');
+  const promptsSection=$('#hhPromptsSection');
+  const historySection=$('#hhHistorySection');
+  const historyToggle=$('#hhHistoryToggle'), historyWrap=$('#hhHistoryWrap');
+  const historyGrid=$('#hhHistoryGrid'), prevBtn=$('#hhPrevPage'), nextBtn=$('#hhNextPage'), pagerInfo=$('#hhPagerInfo');
+  const promptInput=$('#hhPromptInput'), addBtn=$('#hhPromptAddBtn');
+  const resizeX=$('#hhResizeX'), resizeY=$('#hhResizeY'), resizeXY=$('#hhResizeXY');
+
+  // --- State ---
+  let state={captureType:'image', region:'rect', bodyCollapsed:false, menuOpen:false};
+  const pageSize=4; let pageIndex=0;
+
+  // Demo chat histories (each: id, title, messages[]) 
+  let histories=[
+    {id:'h1', title:'Overlay toolbar UI', messages:[{role:'bot',text:"Let's design the toolbar.",ts:Date.now()-3600e3},{role:'me',text:'Make it draggable.',ts:Date.now()-3500e3}]},
+    {id:'h2', title:'Capture mapping', messages:[{role:'me',text:'Map Capture→collapse',ts:Date.now()-3000e3},{role:'bot',text:'Done!',ts:Date.now()-2950e3}]},
+    {id:'h3', title:'Add dropdown menu', messages:[{role:'me',text:'Add ☰ with settings/minimize/close',ts:Date.now()-2600e3}, {role:'bot',text:'All set.',ts:Date.now()-2550e3}]},
+    {id:'h4', title:'Slide animation', messages:[{role:'me',text:'Make body slide',ts:Date.now()-2200e3},{role:'bot',text:'Added max-height transition.',ts:Date.now()-2150e3}]},
+    {id:'h5', title:'Chat bubbles', messages:[{role:'bot',text:'Left/right bubble styles',ts:Date.now()-1800e3}, {role:'me',text:'Looks good.',ts:Date.now()-1750e3}]},
+    {id:'h6', title:'Pagination demo', messages:[{role:'me',text:'Show pills with pagination',ts:Date.now()-1400e3},{role:'bot',text:'Here you go.',ts:Date.now()-1350e3}]}
+  ];
+
+  // --- Utils ---
+  const fmtTime = (ms)=> new Date(ms).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+
+  // --- Chat rendering (column-reverse) ---
+  function renderChat(messages){
+    chat.innerHTML='';
+    const msgs = (messages && messages.length) ? messages : [
+      {role:'bot',text:"Here's a modal with toolbar controls and a bubble minimizer. "+'This is a deliberately long message to demonstrate overflow and scrolling. '.repeat(18),ts:Date.now()-60000},
+      {role:'me',text:'Cool—show me a draggable overlay with a toolbar-first layout.',ts:Date.now()-30000}
+    ];
+    // chronological order; container is column-reverse so newest ends up at bottom
+    msgs.forEach(msg=>{
+      const row=document.createElement('div'); row.className='hh-msg '+(msg.role==='me'?'me':'bot');
+      row.innerHTML=`<div class="stack"><div class="bubble"></div><div class="meta"><span class="hh-time">${fmtTime(msg.ts||Date.now())}</span></div></div>`;
+      row.querySelector('.bubble').textContent=msg.text;
+      chat.appendChild(row);
+    });
+    chat.scrollTop = 0; // bottom (because column-reverse)
+  }
+  renderChat();
+
+  // Typing indicator
+  let typingEl = null; let typingTimer = null;
+  function showTyping(show){
+    if(show){
+      if(!typingEl){
+        typingEl = document.createElement('div');
+        typingEl.className = 'hh-msg bot';
+        typingEl.innerHTML = `<div class="stack"><div class="bubble"><span class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span></div><div class="meta"><span class="hh-time">${fmtTime(Date.now())}</span></div></div>`;
+      }
+      chat.prepend(typingEl); // because column-reverse
+      chat.scrollTop = 0;
+    } else if(typingEl && typingEl.parentNode){
+      typingEl.parentNode.removeChild(typingEl);
+    }
+  }
+
+  // --- History rendering + pagination ---
+  function totalPages(){ return Math.max(1, Math.ceil(histories.length/pageSize)); }
+  function clampPage(){ pageIndex=Math.min(totalPages()-1, Math.max(0,pageIndex)); }
+  function renderHistory(){
+    clampPage();
+    const grid = historyGrid; grid.innerHTML='';
+    const start=pageIndex*pageSize; const items=histories.slice(start,start+pageSize);
+    items.forEach(h=>{
+      const pill=document.createElement('div'); pill.className='hh-history-pill'; pill.title=h.title;
+      pill.innerHTML=`<div class="title">${h.title}</div><button class="close" title="Delete">×</button>`;
+      pill.addEventListener('click',()=>{ renderChat(h.messages); });
+      pill.querySelector('.close').addEventListener('click',(e)=>{ e.stopPropagation(); deleteHistory(h.id); });
+      grid.appendChild(pill);
+    });
+    pagerInfo.textContent=`Page ${pageIndex+1} of ${totalPages()}`;
+    prevBtn.disabled = (pageIndex===0);
+    nextBtn.disabled = (pageIndex>=totalPages()-1);
+  }
+  function deleteHistory(id){ histories = histories.filter(h=>h.id!==id); if(pageIndex>0 && pageIndex*pageSize >= histories.length) pageIndex--; renderHistory(); }
+  renderHistory();
+  prevBtn.addEventListener('click',()=>{ if(pageIndex>0){ pageIndex--; renderHistory(); }});
+  nextBtn.addEventListener('click',()=>{ if(pageIndex<totalPages()-1){ pageIndex++; renderHistory(); }});
+
+  // --- Prompts → append to chat as "You" then bot reply demo ---
+  function addPromptToChat(text){
+    if(!text||!text.trim()) return;
+    const me={role:'me',text:text.trim(),ts:Date.now()};
+    // get current messages in chronological order
+    const current=[...chat.querySelectorAll('.hh-msg')].reverse().map(row=>({
+      role: row.classList.contains('me')?'me':'bot',
+      text: row.querySelector('.bubble')?.textContent||'',
+      ts: Date.now()
+    })).filter(m=>m.text && !m.text.includes('..'));
+    renderChat([...current, me]);
+    // show typing indicator then add bot stub
+    showTyping(true);
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(()=>{
+      showTyping(false);
+      const bot={role:'bot', text:'(stub) Processing your request…', ts:Date.now()};
+      renderChat([...current, me, bot]);
+    }, 900);
+    promptInput.value='';
+  }
+  promptInput.addEventListener('keydown',e=>{ if(e.key==='Enter') addPromptToChat(promptInput.value); });
+  addBtn.addEventListener('click',()=>addPromptToChat(promptInput.value));
+
+  // --- Body collapse mapping ---
+  function setCollapsed(collapsed){ body.classList.toggle('collapsed',collapsed); if(collapsed){ controls.classList.remove('hidden'); captureBtn.classList.add('hidden'); expander.textContent='▾'; } else { controls.classList.add('hidden'); captureBtn.classList.remove('hidden'); expander.textContent='▴'; } }
+  setCollapsed(false);
+  captureBtn.addEventListener('click',()=>setCollapsed(true));
+  cancelBtn.addEventListener('click',()=>setCollapsed(false));
+  expander.addEventListener('click',()=>setCollapsed(!body.classList.contains('collapsed')));
+
+  // --- Menu ---
+  function openMenu(){ menu.classList.remove('hidden'); menuBtn.setAttribute('aria-expanded','true'); }
+  function closeMenu(){ menu.classList.add('hidden'); menuBtn.setAttribute('aria-expanded','false'); }
+  menuBtn.addEventListener('click',e=>{ e.stopPropagation(); (menu.classList.contains('hidden')?openMenu:closeMenu)(); });
+  document.addEventListener('click',e=>{ if(!menu.contains(e.target) && e.target!==menuBtn) closeMenu(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
+
+  // --- Chat History collapse ---
+  historyToggle.addEventListener('click',()=>{ const collapsed=historyWrap.classList.toggle('collapsed'); historyToggle.classList.toggle('rot-180', collapsed); });
+
+  // --- Drag by toolbar (ignore controls) ---
+  (function(){ let dragging=false,sx=0,sy=0,sl=0,st=0; toolbar.addEventListener('mousedown',e=>{ if(e.target.closest('button,input,.hh-menu-btn')) return; dragging=true; const r=modal.getBoundingClientRect(); sx=e.clientX; sy=e.clientY; sl=r.left; st=r.top; e.preventDefault(); }); window.addEventListener('mousemove',e=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; const r=modal.getBoundingClientRect(); let L=sl+dx, T=st+dy; L=Math.min(innerWidth-r.width, Math.max(0,L)); T=Math.min(innerHeight-r.height, Math.max(0,T)); modal.style.left=L+'px'; modal.style.top=T+'px'; modal.style.right='auto'; modal.style.bottom='auto'; }); window.addEventListener('mouseup',()=>dragging=false); })();
+
+  // --- Dynamic min height based on layout (prevents shrinking over Prompts/History) ---
+  function minBodyHeight(){
+    const chatMin = 200; // keep at least this much chat
+    const promptsH = promptsSection.getBoundingClientRect().height;
+    const histHeader = historySection.querySelector('.hh-header');
+    const histHeaderH = histHeader ? histHeader.getBoundingClientRect().height + 14 : 0;
+    const padding = 16; // small safety pad
+    return Math.min(innerHeight*0.85, chatMin + promptsH + histHeaderH + padding);
+  }
+
+  // --- Resizers ---
+  (function(){ // X
+    const handle=resizeX; let dragging=false,sx=0,sw=0; const MIN=520, MAX=Math.min(innerWidth*0.92, 1280);
+    handle.addEventListener('mousedown',e=>{dragging=true;sx=e.clientX;sw=modal.getBoundingClientRect().width;document.body.style.cursor='ew-resize';e.preventDefault();});
+    window.addEventListener('mousemove',e=>{ if(!dragging) return; const dx=e.clientX-sx; let w=sw+dx; w=Math.max(MIN,Math.min(MAX,w)); modal.style.width=w+'px'; });
+    window.addEventListener('mouseup',()=>{ if(!dragging) return; dragging=false; document.body.style.cursor=''; });
+    window.addEventListener('resize',()=>{ const max=Math.min(innerWidth*0.92,1280); const w=parseFloat(getComputedStyle(modal).width); if(w>max) modal.style.width=max+'px'; });
+  })();
+
+  (function(){ // Y
+    const handle=resizeY; let dragging=false, sy=0, sh=0;
+    handle.addEventListener('mousedown',e=>{dragging=true; sy=e.clientY; sh=parseFloat(getComputedStyle(body).maxHeight)||body.getBoundingClientRect().height; document.body.style.cursor='ns-resize'; e.preventDefault();});
+    window.addEventListener('mousemove',e=>{ if(!dragging) return; const dy=e.clientY - sy; let h = sh + dy; const MIN = minBodyHeight(); const MAX = Math.min(innerHeight*0.85, 1200); h = Math.max(MIN, Math.min(MAX, h)); body.style.maxHeight = h + 'px'; });
+    window.addEventListener('mouseup',()=>{ if(!dragging) return; dragging=false; document.body.style.cursor=''; });
+    window.addEventListener('resize',()=>{ const max=Math.min(innerHeight*0.85,1200); const cur=parseFloat(getComputedStyle(body).maxHeight)||body.getBoundingClientRect().height; if(cur>max) body.style.maxHeight=max+'px'; });
+  })();
+
+  (function(){ // XY
+    const handle=resizeXY; let dragging=false, sx=0, sy=0, sw=0, sh=0;
+    handle.addEventListener('mousedown',e=>{dragging=true; sx=e.clientX; sy=e.clientY; const r=modal.getBoundingClientRect(); sw=r.width; sh=parseFloat(getComputedStyle(body).maxHeight)||body.getBoundingClientRect().height; document.body.style.cursor='nwse-resize'; e.preventDefault();});
+    window.addEventListener('mousemove',e=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; let w=sw+dx; let h=sh+dy; const MINW=520, MAXW=Math.min(innerWidth*0.92,1280); const MINH=minBodyHeight(), MAXH=Math.min(innerHeight*0.85,1200); w=Math.max(MINW,Math.min(MAXW,w)); h=Math.max(MINH,Math.min(MAXH,h)); modal.style.width=w+'px'; body.style.maxHeight=h+'px'; });
+    window.addEventListener('mouseup',()=>{ if(!dragging) return; dragging=false; document.body.style.cursor=''; });
+    window.addEventListener('resize',()=>{ const maxW=Math.min(innerWidth*0.92,1280); const w=parseFloat(getComputedStyle(modal).width); if(w>maxW) modal.style.width=maxW+'px'; const maxH=Math.min(innerHeight*0.85,1200); const h=parseFloat(getComputedStyle(body).maxHeight)||body.getBoundingClientRect().height; if(h>maxH) body.style.maxHeight=maxH+'px'; });
+  })();
+
+  // Scroll chat to bottom on load
+  chat.scrollTop = 0;
+})();
+</script>
+</body>
+</html>

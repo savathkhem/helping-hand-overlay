@@ -17,7 +17,8 @@
       "app-shell.html","app.js","app.css",     
       "shared.css",
       "config.js","storage.js","ui.js","gemini.js","speech.js",
-      "surface-controller.js"                 
+      "surface-controller.js",
+      "dist/*"                 
     ],
     "matches": ["<all_urls>"]
   }],

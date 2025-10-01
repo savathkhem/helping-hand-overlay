@@ -24,6 +24,7 @@
   let isRecordingVideo = false;
   let isVideoProcessing = false;
   let lastObjectUrl = '';
+  let collapsed = false;
   let micRecording = false;
 
   function revokeObjectUrl(){
@@ -316,9 +317,12 @@
     }
   }
   function stopVideoRecording(){ try{ if (mediaRecorder && mediaRecorder.state==='recording') mediaRecorder.stop(); }catch{} }
+  function toggleCollapse(){ collapsed = !collapsed; }
+  function openSettings(){ try { chrome.runtime.openOptionsPage(); } catch(e) { console.warn('openOptionsPage failed', e); } }
+  function closeModal(){ try { parent.postMessage({ type: 'hh-close-modal' }, '*'); } catch(e) {} }
 </script>
 
-<ModalShell variant={surface === 'modal' ? 'panel' : 'modal'} on:capture={onCapture}>
+<ModalShell {collapsed} variant={surface === 'modal' ? 'panel' : 'modal'} on:capture={onCapture} on:toggleCollapse={toggleCollapse} on:openSettings={openSettings} on:close={closeModal}>
   {#if surface === 'modal'}
   <div class="hh-section" id="hhPreviewSection">
     <div class="hh-header"><h3>Preview</h3></div>

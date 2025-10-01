@@ -17,6 +17,10 @@ body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,
 .hh-body-inner{background:#fff;display:flex;flex-direction:column}
 .hh-panel{position:relative;width:100%;height:100%;max-width:none;max-height:none;background:var(--bg)}
 .hh-panel-body{height:100%;max-height:none;overflow:auto}
+.hh-panel-body.collapsed,.hh-modal-body.collapsed{max-height:0;overflow:hidden}
+.hh-toolbar-menu .hh-menu-dropdown{position:absolute;top:100%;right:0;background:#fff;border:1px solid #ddd;border-radius:10px;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:160px;overflow:hidden;z-index:9999}
+.hh-toolbar-menu .hh-menu-dropdown button{background:#fff;border:none;text-align:left;padding:8px 12px;cursor:pointer}
+.hh-toolbar-menu .hh-menu-dropdown button:hover{background:#f3f4f6}
 .hh-panel .hh-modal-toolbar{position:sticky;top:0;z-index:1;border-bottom:1px solid var(--muted-2);background:var(--muted)}
 .hh-section{padding:14px 16px}
 .hh-header{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px}

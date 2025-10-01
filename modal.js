@@ -62,6 +62,15 @@
   root.appendChild(modal);
   document.documentElement.appendChild(root);
 
+  // Allow iframe to request close via postMessage
+  window.addEventListener('message', (e) => {
+    try {
+      if (e?.data && e.data.type === 'hh-close-modal') {
+        root.remove();
+      }
+    } catch {}
+  });
+
   // Drag logic
   (() => {
     let isDragging = false;

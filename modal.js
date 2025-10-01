@@ -48,6 +48,7 @@
   const iframe = document.createElement('iframe');
   iframe.className = 'hh-modal-iframe';
   iframe.src = chrome.runtime.getURL('app-shell.html?surface=modal');
+  try { iframe.allow = 'microphone; clipboard-read; clipboard-write'; } catch (e) {}
   body.appendChild(iframe);
 
   const handle = document.createElement('div');

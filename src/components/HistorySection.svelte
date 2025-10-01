@@ -1,7 +1,13 @@
 <script>
+  import { createEventDispatcher } from 'svelte';
+  const dispatch = createEventDispatcher();
   export let items = [];
   export let page = 1;
   export let pages = 1;
+
+  function select(item){
+    dispatch('select', { id: item.id, item });
+  }
 </script>
 
 <div class="hh-section">
@@ -12,7 +18,7 @@
   <div class="hh-history-wrap">
     <div class="hh-history-grid">
       {#each items as item}
-        <div class="hh-history-pill">
+        <div class="hh-history-pill" on:click={() => select(item)} tabindex="0" role="button" aria-label={`Open ${item.title || 'capture'}`}>
           <div class="title">{item.title}</div>
           <div class="meta">{item.count || 0} msgs</div>
         </div>
@@ -25,4 +31,3 @@
     </div>
   </div>
 </div>
-

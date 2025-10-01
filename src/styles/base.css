@@ -15,14 +15,17 @@ body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,
 .hh-expander{width:28px;height:28px;border-radius:999px;border:1px solid var(--muted-2);background:#fff;cursor:pointer;font-weight:700;display:grid;place-items:center}
 .hh-modal-body{max-height:680px;overflow:hidden}
 .hh-body-inner{background:#fff;display:flex;flex-direction:column}
+.hh-panel{position:relative;width:100%;height:100%;max-width:none;max-height:none;background:var(--bg)}
+.hh-panel-body{height:100%;max-height:none;overflow:auto}
+.hh-panel .hh-modal-toolbar{position:sticky;top:0;z-index:1;border-bottom:1px solid var(--muted-2);background:var(--muted)}
 .hh-section{padding:14px 16px}
 .hh-header{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px}
 .hh-header h3{margin:0;font-size:14px;color:var(--ink)}
 .hh-chat{background:#fff;border:1px solid var(--muted-2);border-radius:12px;height:340px;overflow-y:auto;overflow-x:hidden;padding:12px;display:flex;flex-direction:column-reverse;gap:10px}
 .hh-prompt-pill{display:flex;align-items:center;gap:10px;background:#f3f4f6;border:1px solid var(--muted-2);border-radius:999px;padding:10px 14px}
 .icon-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--muted-2);background:#fff;display:grid;place-items:center;cursor:pointer}
+.icon-btn.toggled{background:var(--brand-1);border-color:var(--brand-1);color:#fff}
 .hh-pill-input{flex:1;border:none;outline:none;background:transparent;font-size:14px;color:var(--ink)}
 .hh-history-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .hh-history-pill{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:10px 12px;border-radius:999px;background:#f3f4f6;border:1px solid #e5e7eb;cursor:pointer}
 .hh-history-pill:hover{background:#e8ecf3}
-

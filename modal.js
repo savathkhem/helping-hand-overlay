@@ -47,7 +47,7 @@
   body.className = 'hh-modal-body';
   const iframe = document.createElement('iframe');
   iframe.className = 'hh-modal-iframe';
-  iframe.src = chrome.runtime.getURL('app-shell.html');
+  iframe.src = chrome.runtime.getURL('app-shell.html?surface=modal');
   body.appendChild(iframe);
 
   const handle = document.createElement('div');

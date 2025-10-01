@@ -5,7 +5,9 @@ const target =
   document.getElementById('sidePanelContainer') ||
   document.body;
 
-const app = new App({ target });
+const params = new URLSearchParams(location.search);
+const surface = params.get('surface') || (document.getElementById('sidePanelContainer') ? 'sidepanel' : 'popup');
+
+const app = new App({ target, props: { surface } });
 
 export default app;
-
